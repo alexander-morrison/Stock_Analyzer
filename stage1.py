@@ -5,43 +5,32 @@ from openai import OpenAI
 load_dotenv()
 
 alpha_key = os.getenv("ALPHAVANTAGE_API_KEY")
-
 client = OpenAI()
 
-
 instructions = """
-You are a helpful financial agent with access to market data through Alpha Vantage MCP Server.
-IMPORTANT: Alpha Vantage functions are accessed via wrapper tools:
-  - Use TOOL_LIST to see available functions (TIME_SERIES_DAILY, RSI, COMPANY_OVERVIEW, etc.)
-  - Use TOOL_CALL with the format: TOOL_CALL(tool_name="FUNCTION_NAME", arguments={...})
-  - Example: TOOL_CALL(tool_name="TIME_SERIES_DAILY", arguments={"symbol": "AAPL", "outputsize": "compact"})
+You are a helpful financial agent using Alpha Vantage MCP tools.
+CRITICAL: Use EXACT format for tools:
+TOOL_CALL(tool_name="TIME_SERIES_DAILY", arguments={"symbol": "AAPL", "outputsize": "compact"})
+List tools first with TOOL_LIST if needed. Available: TIME_SERIES_DAILY, RSI, COMPANY_OVERVIEW.
+NEVER use mcp_call or other names.
 """
 
 prompt = """
-## Stock Summary: AAPL
-
-### 1. Data Retrieval
-Retrieve daily data for 'AAPL' (last 3 days):
-TOOL_CALL(tool_name="TIME_SERIES_DAILY", arguments={"symbol": "AAPL", "outputsize": "compact"})
-
-### 2. Summary
-Provide a brief overview:
-- Price movement (up/down/flat)
-- Day-over-day % change
-- Notable volume changes
+## Task: AAPL Stock Summary (last 3 days)
+1. Retrieve data: TOOL_CALL(tool_name="TIME_SERIES_DAILY", arguments={"symbol": "AAPL", "outputsize": "compact"})
+2. Analyze: price movement, day-over-day % change, volume changes.
+Output summary only after data.
 """
 
 response = client.responses.create(
     model="gpt-4o-mini",
-    tools=[
-        {
-            "type": "mcp",
-            "server_label": "AlphaVantage",
-            "server_url": "https://mcp.alphavantage.co/mcp",
-            "authorization": alpha_key,
-            "require_approval": "never",
-        },
-    ],
+    tools=[{
+        "type": "mcp",
+        "server_label": "AlphaVantage",
+        "server_url": "https://mcp.alphavantage.co/mcp",
+        "authorization": alpha_key,
+        "require_approval": "never",
+    }],
     input=prompt
 )
 
